@@ -62,27 +62,37 @@ namespace maptest
             Device.StartTimer(new TimeSpan(0), () =>
             {
                 // do something every 60 seconds
-                Device.BeginInvokeOnMainThread(() =>
+                Task.Run(() =>
                 {
                     Find(itemloc);
                 });
                 return true; // runs again, or false to stop
             });
         }
+        public double GetTime()
+        {
+            double miliseconds = DateTime.Now.Millisecond;
+            double seconds = DateTime.Now.Second;
+            double minutes = DateTime.Now.Minute;
+            return ((minutes * 60) + seconds) * 100 + miliseconds;
+        }
         public void Find(Position item)
         {
-            double time = DateTime.Now.Ticks;
             var player = new Player();
-            Device.StartTimer(new TimeSpan(0, 0, 1), () =>
+            double time = GetTime();
+            double refresh = time + 300;
+            double longitude = player.PlayerPositon().Result.Longitude;
+            double latitude = player.PlayerPositon().Result.Latitude;
+            double blinktime = time + (((item.Latitude + item.Longitude) - (longitude + latitude)));
+
+            Device.StartTimer(new TimeSpan(500), () =>
             {
-                bool next = true;
                 // do something every 60 seconds
-                Device.BeginInvokeOnMainThread(() =>
+                Task.Run(() =>
                 {
 
+                    time = GetTime();
                     
-                    //double blinktime = time + (((item.Latitude + item.Longitude) - (player.PlayerPositon().Result.Longitude + player.PlayerPositon().Result.Latitude)) / 100000);
-                    double blinktime = time + 4500;
                     if (blinktime < 0)
                     {
                         blinktime = -blinktime;
@@ -90,17 +100,24 @@ namespace maptest
                     {
                         if (time <= blinktime)
                         {
-                            button.BackgroundColor = Color.Red;
+                            button.BackgroundColor = Color.White;
                         }
                         else
                         {
-                            next = false;
+                            button.BackgroundColor = Color.Gold;
+                            blinktime = time + (((item.Latitude + item.Longitude) - (longitude + latitude)) * 10);
+                        }
+                        if (refresh <= time)
+                        {
+                            longitude = player.PlayerPositon().Result.Longitude;
+                            latitude = player.PlayerPositon().Result.Latitude;
+                            refresh = time + 300;
                         }
                     }
                 });
-                return next; // runs again, or false to stop
+                return false; // runs again, or false to stop
             });
-                button.BackgroundColor = Color.Gold;
+                
         
         }
     }
